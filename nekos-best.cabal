@@ -2,13 +2,22 @@ cabal-version:      2.4
 name:               nekos-best
 version:            0.1.0.0
 synopsis:           Unofficial nekos.best API wrapper
-homepage:
+homepage:           https://github.com/xquantxz/nekos-best.hs
 license:            MIT
 license-file:       LICENSE
 author:             xQuantx
 maintainer:         xquantxz@gmail.com
 category:           Catgirls
 extra-source-files: README.md
+
+source-repository head
+  type:     git
+  location: https://github.com/xquantxz/nekos-best.hs
+
+source-repository this
+  type:     git
+  location: https://github.com/xquantxz/nekos-best.hs
+  tag:      v0.1.0.0
 
 library
     exposed-modules:
