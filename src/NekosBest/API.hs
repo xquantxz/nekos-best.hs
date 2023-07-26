@@ -2,7 +2,9 @@
 
 module NekosBest.API (
     getNbImage,
-    getNbImages
+    getNbImages,
+    randomNbImage,
+    randomNbImages
 ) where 
 
 import Network.HTTP.Client
@@ -13,8 +15,9 @@ import Data.ByteString.Lazy as L ( ByteString )
 import Data.Map ( Map, findWithDefault )
 import Data.Maybe ( fromMaybe )
 import Data.Char (toLower)
+import System.Random (RandomGen, randomR)
 
-import NekosBest.Category ( NbCategory )
+import NekosBest.Category ( NbCategory, allCategories )
 
 data NbResult = NbResult {
     artistHref :: String,
@@ -55,3 +58,23 @@ getResultsFromJson :: L.ByteString -> [NbResult]
 getResultsFromJson json = fromMaybe [] results
     where json' = decode' json :: Maybe (Map String [NbResult])
           results = findWithDefault [] "results" <$> json'
+
+
+randomNbImage :: (RandomGen g) => g -> IO (Maybe NbResult, g)
+randomNbImage gen = do
+    let (c, gen') = randomCategory gen
+    print c
+    res <- getNbImage c
+    return (res, gen')
+    where randomIndex = randomR (0, length allCategories)
+          randomCategory gen = let (c, gen') = randomIndex gen
+                               in (allCategories !! c, gen')
+
+randomNbImages :: (RandomGen g, Integral i) => g -> i -> IO ([NbResult], g)
+randomNbImages gen 0 = return ([], gen)
+randomNbImages gen n = do
+    (res, gen') <- randomNbImage gen
+    (xs, gen'') <- randomNbImages gen' (n-1)
+    return $ case res of Just x -> (x:xs, gen'')
+                         Nothing -> (xs, gen'')
+
