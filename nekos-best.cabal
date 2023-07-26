@@ -3,7 +3,7 @@ name:               nekos-best
 version:            0.1.0.0
 synopsis:           Unofficial nekos.best API wrapper
 description:        The Nekos.best API Wrapper in Haskell is a powerful and flexible tool designed to interact seamlessly with the Nekos.best API,
-                    a popular service for fetching adorable and charming neko-themed images, gifs
+                    a popular service for fetching adorable and charming neko-themed images and more
 homepage:           https://github.com/xquantxz/nekos-best.hs
 bug-reports:        https://github.com/xquantxz/nekos-best.hs/issues
 build-type:         Custom
