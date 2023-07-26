@@ -10,7 +10,7 @@ module NekosBest.API (
 import Network.HTTP.Client
 import Network.HTTP.Types.Status (statusCode, requestHeaderFieldsTooLarge431)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Data.Aeson ( decode', FromJSON, withObject, (.:), parseJSON)
+import Data.Aeson ( decode', FromJSON, withObject, (.:?), parseJSON)
 import Data.ByteString.Lazy as L ( ByteString )
 import Data.Map ( Map, findWithDefault )
 import Data.Maybe ( fromMaybe )
@@ -20,18 +20,20 @@ import System.Random (RandomGen, randomR)
 import NekosBest.Category ( NbCategory, allCategories )
 
 data NbResult = NbResult {
-    artistHref :: String,
-    artistName :: String,
-    sourceUrl :: String,
-    url :: String
+    artistHref :: Maybe String,
+    artistName :: Maybe String,
+    sourceUrl :: Maybe String,
+    animeName :: Maybe String,
+    url :: Maybe String
 } deriving (Show)
 
 instance FromJSON NbResult where
     parseJSON = withObject "NbResult" $ \v -> NbResult
-        <$> v .: "artist_href"
-        <*> v .: "artist_name"
-        <*> v .: "source_url"
-        <*> v .: "url"
+        <$> v .:? "artist_href"
+        <*> v .:? "artist_name"
+        <*> v .:? "source_url"
+        <*> v .:? "anime_name"
+        <*> v .:? "url"
 
 getNbImages :: (Show i, Integral i) => NbCategory -> i -> IO [NbResult]
 getNbImages c i = do
