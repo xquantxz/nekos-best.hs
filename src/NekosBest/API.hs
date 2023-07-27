@@ -4,14 +4,15 @@ module NekosBest.API (
     getNbImage,
     getNbImages,
     randomNbImage,
-    randomNbImages
+    randomNbImages,
+    downloadNbImage
 ) where
 
 import Network.HTTP.Client
 import Network.HTTP.Types.Status (statusCode, requestHeaderFieldsTooLarge431)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Data.Aeson ( decode', FromJSON, withObject, (.:?), parseJSON)
-import Data.ByteString.Lazy as L ( ByteString )
+import Data.ByteString.Lazy as L ( ByteString, writeFile )
 import Data.Map ( Map, findWithDefault )
 import Data.Maybe ( fromMaybe )
 import Data.Char (toLower)
@@ -82,3 +83,15 @@ randomNbImages gen n = do
     return $ case res of Right x -> (Right x:xs, gen'')
                          Left e -> (Left e:xs, gen'')
 
+downloadNbImage :: NbResult -> FilePath -> IO (Maybe NbError)
+downloadNbImage res path = case url res of
+    Just x -> do
+              response <- makeHttpRequest x
+              let status = statusCode $ responseStatus response
+              if status == 200 then do
+                let content = responseBody response
+                L.writeFile path content
+                return Nothing
+              else do
+                return $ Just $ NbError "Received invalid HTTP status code"
+    Nothing -> return $ Just $ NbError "No image url in result"
