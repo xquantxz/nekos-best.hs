@@ -27,6 +27,7 @@ library
     exposed-modules:
         NekosBest.API
         NekosBest.Category
+        NekosBest.Error
     other-extensions: OverloadedStrings
     build-depends:    base ^>= 4.16.4.0,
                       random >= 1.2.1.1,

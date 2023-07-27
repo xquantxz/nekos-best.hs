@@ -5,7 +5,7 @@ module NekosBest.API (
     getNbImages,
     randomNbImage,
     randomNbImages
-) where 
+) where
 
 import Network.HTTP.Client
 import Network.HTTP.Types.Status (statusCode, requestHeaderFieldsTooLarge431)
@@ -18,6 +18,7 @@ import Data.Char (toLower)
 import System.Random (RandomGen, randomR)
 
 import NekosBest.Category ( NbCategory, allCategories )
+import NekosBest.Error (NbError(..))
 
 data NbResult = NbResult {
     artistHref :: Maybe String,
@@ -35,48 +36,49 @@ instance FromJSON NbResult where
         <*> v .:? "anime_name"
         <*> v .:? "url"
 
-getNbImages :: (Show i, Integral i) => NbCategory -> i -> IO [NbResult]
-getNbImages c i = do
+makeHttpRequest :: String -> IO (Response L.ByteString)
+makeHttpRequest url = do
     manager <- newManager tlsManagerSettings
+    request <- parseRequest url
+    httpLbs request manager
+
+getNbImages :: (Show i, Integral i) => NbCategory -> i -> IO (Either NbError [NbResult])
+getNbImages c i = do
     let endpoint = toLower <$> show c
-    request <- parseRequest $ "https://nekos.best/api/v2/" ++ endpoint ++ "?amount=" ++ show i
-    response <- httpLbs request manager
+    response <- makeHttpRequest $ "https://nekos.best/api/v2/" ++ endpoint ++ "?amount=" ++ show i
     let status = statusCode $ responseStatus response
     if status == 200 then do
         let json = responseBody response
         let result = getResultsFromJson json
-        
-        return result
+
+        return $ Right result
     else do
-        return []
-    
-getNbImage :: NbCategory -> IO (Maybe NbResult)
+        return $ Left (NbError "Received invalid HTTP status code")
+
+getNbImage :: NbCategory -> IO (Either NbError NbResult)
 getNbImage c = do
     result <- getNbImages c 1
-    return $ case result of [] -> Nothing
-                            r:_ -> Just r
-
+    return $ fmap (\(x:_) -> x) result
 getResultsFromJson :: L.ByteString -> [NbResult]
 getResultsFromJson json = fromMaybe [] results
     where json' = decode' json :: Maybe (Map String [NbResult])
           results = findWithDefault [] "results" <$> json'
 
 
-randomNbImage :: (RandomGen g) => g -> IO (Maybe NbResult, g)
+randomNbImage :: (RandomGen g) => g -> IO (Either NbError NbResult, g)
 randomNbImage gen = do
     let (c, gen') = randomCategory gen
-    print c
     res <- getNbImage c
     return (res, gen')
     where randomIndex = randomR (0, length allCategories)
           randomCategory gen = let (c, gen') = randomIndex gen
                                in (allCategories !! c, gen')
 
-randomNbImages :: (RandomGen g, Integral i) => g -> i -> IO ([NbResult], g)
+randomNbImages :: (RandomGen g, Integral i) => g -> i -> IO ([Either NbError NbResult], g)
 randomNbImages gen 0 = return ([], gen)
 randomNbImages gen n = do
     (res, gen') <- randomNbImage gen
     (xs, gen'') <- randomNbImages gen' (n-1)
-    return $ case res of Just x -> (x:xs, gen'')
-                         Nothing -> (xs, gen'')
+    return $ case res of Right x -> (Right x:xs, gen'')
+                         Left e -> (Left e:xs, gen'')
 
